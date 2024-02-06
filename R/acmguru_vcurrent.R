@@ -5,40 +5,70 @@ library(stringr)
 library(ggplot2)
 library(ggpubr)
 library(grid)
+library(data.table) # fread
+# Specify the path where you want to save the CSV file with the suggestions
+metadataclass_file_path <- "./output/suggested_reference_metadata.csv"
+
 
 # Function to read data files and merge with sample phenotype information
 read_data_file <- function(input_path, samples_file_path) {
   files <- character()
 
   if (dir.exists(input_path)) {
-    files <-
-      list.files(input_path, pattern = "\\.csv$", full.names = TRUE)
-  } else if (file.exists(input_path) &&
-             grepl("\\.csv$", input_path)) {
+    files <- list.files(input_path, pattern = "\\.csv$", full.names = TRUE)
+  } else if (file.exists(input_path) && grepl("\\.csv$", input_path)) {
     files <- input_path
   } else {
     stop("Input path is neither a valid file nor a directory.")
   }
 
   cat("Reading samples information from: ", samples_file_path, "\n")
-  samples_df <-
-    read.table(
-      samples_file_path,
-      sep = "\t",
-      col.names = c("sample", "cohort_pheno"),
-      header = FALSE
-    )
+  samples_df <- fread(samples_file_path, sep = "\t", col.names = c("sample", "cohort_pheno"), header = FALSE, data.table = FALSE)
 
   data_list <- list()
   for (file_path in files) {
     cat("Reading file: ", file_path, "\n")
-    df <- read.csv(file_path, sep = ",")
+    df <- fread(file_path, sep = ",", data.table = FALSE) # fread reads into a data.table by default, data.table = FALSE converts it to a data.frame
     df <- merge(df, samples_df, by = "sample", all.x = TRUE)
     data_list[[basename(file_path)]] <- df
   }
 
   return(data_list)
 }
+
+
+# Function to apply column classes based on reference metadata
+apply_column_classes <- function(processed_data_list, metadataclass_file_path) {
+  if (!file.exists(metadataclass_file_path)) {
+    cat("Reference metadata file does not exist. Skipping column class adjustment.\n")
+    return(processed_data_list)
+  }
+
+  reference_metadata <- read.csv(metadataclass_file_path, stringsAsFactors = FALSE)
+  reference_metadata_list <- setNames(as.list(reference_metadata$most_common_class), reference_metadata$column_name)
+
+  adjusted_data_list <- lapply(processed_data_list, function(df) {
+    for (column_name in names(reference_metadata_list)) {
+      if (column_name %in% names(df)) {
+        class_type <- reference_metadata_list[[column_name]]
+        df[[column_name]] <- tryCatch({
+          if (class_type == "factor") as.factor(df[[column_name]])
+          else if (class_type == "numeric") as.numeric(df[[column_name]])
+          else if (class_type == "integer") as.integer(df[[column_name]])
+          else if (class_type == "character") as.character(df[[column_name]])
+          else df[[column_name]] # Return column as-is if class type not recognized
+        }, error = function(e) {
+          cat("Error converting column", column_name, "to", class_type, "\n")
+          df[[column_name]] # Return column as-is in case of error
+        })
+      }
+    }
+    return(df)
+  })
+
+  return(adjusted_data_list)
+}
+
 
 # comp_het_flag ----
 # Function to set compound heterozygous flags.  WARNING NOT PHASE CHECKED
@@ -62,7 +92,7 @@ filter_by_allele_frequency <- function(df, af_threshold) {
   return(df_filtered)
 }
 
-# PVS1 ----
+# PSV1 ----
 # PVS1 are null variants where IMPACT=="HIGH" and inheritance match, in gene where LoF cause disease.
 # Function to apply ACMG PVS1 criterion
 apply_acmg_pvs1 <- function(df) {
@@ -90,6 +120,7 @@ apply_acmg_pvs1 <- function(df) {
 
   return(df)
 }
+
 
 # PS1 ----
 # PS1 Same amino acid change as a previously established pathogenic variant regardless of nucleotide change. Note to keep splicing variant as PSV1 (these are covered by IPACT HIGH).
@@ -215,9 +246,13 @@ apply_acmg_pp3 <- function(df) {
   cond_PolyPhen_label <- df$PolyPhen_label == "probably_damaging"
 
   # Count the conditions met
-  df$ACMG_PP3_count <- rowSums(cbind(cond_CADD_PHRED, cond_REVEL_rankscore,
-                                     cond_MetaLR_pred, cond_MutationAssessor_pred,
-                                     cond_SIFT_label, cond_PolyPhen_label), na.rm = TRUE)
+  df$ACMG_PP3_count <- rowSums(cbind(cond_CADD_PHRED,
+                                     cond_REVEL_rankscore,
+                                     cond_MetaLR_pred,
+                                     cond_MutationAssessor_pred,
+                                     cond_SIFT_label,
+                                     cond_PolyPhen_label),
+                               na.rm = TRUE)
 
   # Apply PP3 if the threshold is met
   threshold <- 3
@@ -266,6 +301,112 @@ process_genetic_data <- function(input_path, samples_file_path, af_threshold) {
 
   return(processed_data_list)
 }
+
+
+# process_genetic_data ----
+# Assuming process_genetic_data function returns a list of processed dataframes
+processed_data_list <- process_genetic_data(input_path, samples_file_path, af_threshold)
+
+
+
+
+# reference metadata ----
+
+# Updated function to compare column classes, identify conflicts, and output the most common class to a CSV file
+compare_column_classes_and_output_csv <- function(processed_data_list, metadataclass_file_path) {
+  column_classes_list <- lapply(processed_data_list, function(df) sapply(df, class))
+  all_column_names <- unique(unlist(lapply(column_classes_list, names)))
+
+  suggested_reference_metadata <- data.frame(column_name = character(), most_common_class = character(), stringsAsFactors = FALSE)
+
+  for (column_name in all_column_names) {
+    column_classes <- sapply(column_classes_list, `[`, column_name)
+    unique_classes <- unique(na.omit(column_classes))
+
+    if (length(unique_classes) > 1) {
+      # Tally up the occurrences of each class
+      class_counts <- table(unlist(column_classes))
+      most_common_class <- names(which.max(class_counts))
+
+      # Append to the dataframe
+      suggested_reference_metadata <- rbind(suggested_reference_metadata, data.frame(column_name = column_name, most_common_class = most_common_class, stringsAsFactors = FALSE))
+    }
+  }
+
+  # Write the suggestions to a CSV file
+  if(nrow(suggested_reference_metadata) > 0) {
+    write.csv(suggested_reference_metadata, metadataclass_file_path, row.names = FALSE)
+    cat("Suggested reference metadata classes have been output to:", metadataclass_file_path, "\n")
+  } else {
+    cat("All columns have consistent classes across dataframes. No output file created.\n")
+  }
+}
+
+# Call the function with your processed data list and the output file path
+compare_column_classes_and_output_csv(processed_data_list, metadataclass_file_path)
+
+# Later, when you need to use the reference metadata for data importation:
+if(file.exists(metadataclass_file_path)) {
+  reference_metadata <- read.csv(metadataclass_file_path, stringsAsFactors = FALSE)
+  # Convert the dataframe to a list where column names are the names of the list
+  reference_metadata_list <- setNames(as.list(reference_metadata$most_common_class), reference_metadata$column_name)
+
+  # You can now use reference_metadata_list to set column classes
+}
+
+
+
+apply_column_classes_to_processed_data <- function(processed_data_list, metadataclass_file_path) {
+  # Check if the reference metadata file exists
+  if (!file.exists(metadataclass_file_path)) {
+    stop("Reference metadata file does not exist.")
+  }
+
+  # Read the reference metadata file
+  reference_metadata <- read.csv(metadataclass_file_path, stringsAsFactors = FALSE)
+  # Convert to a list for easier manipulation
+  reference_metadata_list <- setNames(as.list(reference_metadata$most_common_class), reference_metadata$column_name)
+
+  # Apply the column classes to each dataframe in the list
+  adjusted_data_list <- lapply(processed_data_list, function(df) {
+    for (column_name in names(reference_metadata_list)) {
+      if (column_name %in% names(df)) {
+        class_type <- reference_metadata_list[[column_name]]
+        df[[column_name]] <- tryCatch({
+          switch(class_type,
+                 "factor" = as.factor(df[[column_name]]),
+                 "numeric" = as.numeric(df[[column_name]]),
+                 "integer" = as.integer(df[[column_name]]),
+                 "character" = as.character(df[[column_name]]),
+                 df[[column_name]]) # Default case to return column as-is if class type not recognized
+        }, error = function(e) {
+          message(paste("Error converting column", column_name, "to", class_type, "in dataframe. Error:", e$message))
+          df[[column_name]] # Return column as-is in case of error
+        })
+      }
+    }
+    return(df)
+  })
+
+  return(adjusted_data_list)
+}
+
+
+# Generate reference metadata for column classes
+compare_column_classes_and_output_csv(processed_data_list, "metadataclass_file_path")
+
+# Apply the corrected column classes to each dataset in processed_data_list
+processed_data_list <- apply_column_classes_to_processed_data(processed_data_list, "metadataclass_file_path")
+
+
+
+
+
+
+
+
+
+
 
 
 # acmg tally  ----
@@ -361,13 +502,3 @@ file_suffix <- "example_suffix"
 # plot_variants_per_criteria(df, file_suffix)
 
 # Continue with other plotting functions similarly
-
-
-
-
-#
-#
-#
-#
-#
-#
