@@ -1,3 +1,4 @@
+
 # Load necessary libraries
 library(dplyr)
 library(tidyr)
@@ -307,6 +308,11 @@ process_genetic_data <- function(input_path, samples_file_path, af_threshold) {
 # Assuming process_genetic_data function returns a list of processed dataframes
 processed_data_list <- process_genetic_data(input_path, samples_file_path, af_threshold)
 
+#'
+#' @examples
+#' \dontrun{
+#'   processed_data_list <- process_genetic_data(input_path, samples_file_path, af_threshold)
+#' }
 
 
 
