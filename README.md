@@ -1,3 +1,5 @@
+![Alt Text](./images/DALLE_guru.jpg)
+
 # ACMGuru
 
 ACMGuru is an R package designed to facilitate the interpretation of genetic determinants of disease in genomic data. It applies extensive annotation and filtering based on the ACMG (American College of Medical Genetics and Genomics) and AMP (Association for Molecular Pathology) guideline standards. 
@@ -6,7 +8,6 @@ Richards et al.'s joint consensus recommendation on the standards and guidelines
 
 Accepts VCF format.
 
-![Alt Text](./images/DALLE_guru.jpg)
 
 ## Features
 
