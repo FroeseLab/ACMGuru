@@ -3,9 +3,16 @@
 #' Applies the column classes to each dataframe in a list based on a provided reference metadata CSV file.
 #'
 #' @param processed_data_list A list of dataframes to be adjusted.
-#' @param metadataclass_file_path Path to the CSV file containing reference metadata for column classes.
+#' @param metadataclass_file_path Optional. Path to the CSV file containing reference metadata for column classes.
+#' If not provided, uses the default file included in the package.
 #' @export
-apply_column_classes_to_processed_data <- function(processed_data_list, metadataclass_file_path) {
+apply_column_classes_to_processed_data <- function(processed_data_list, metadataclass_file_path = NULL) {
+  # Use the default file if no path is provided
+  if (is.null(metadataclass_file_path)) {
+    metadataclass_file_path <- system.file("extdata", "suggested_reference_metadata.csv", package = "ACMGuru")
+  }
+
+  # Check if the file exists
   if (!file.exists(metadataclass_file_path)) {
     stop("Reference metadata file does not exist.")
   }
@@ -35,4 +42,3 @@ apply_column_classes_to_processed_data <- function(processed_data_list, metadata
 
   return(adjusted_data_list)
 }
-

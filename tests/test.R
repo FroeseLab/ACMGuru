@@ -1,51 +1,80 @@
 # Load necessary libraries
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(ggplot2)
-library(ggpubr)
-library(grid)
-library(data.table) # fread
-# Specify the path where you want to save the CSV file with the suggestions
-#
+# library(dplyr)
+# library(tidyr)
+# library(stringr)
+# library(ggplot2)
+# library(ggpubr)
+# library(grid)
+# library(data.table) # fread
 
-devtools::document()
+# devtools::document()
 
 # From the package root directory
 library(devtools)
+# devtools::install()
 load_all() # Automatically points to the current directory as the package root
-# library(devtools)
-# load_all(".")
-
-
 
 # varsome ----
 # LE = less than equal to, GE = greater than equal to
 # varsome <- read.csv(file = "../../data/singlecase/varsome_calibrated_insilico_thresholds.tsv", sep="\t")
 
 
-# source("../R/acmguru_vcurrent.R")
+# user variables ----
+output_path <- "../output/"
 
-if (!dir.exists("../output/")) {
-  dir.create("../output/", recursive = TRUE)
-}
+samples_file_path <- "../data/samples.tsv" # phenotype data
 
-# Specify the path for input data and samples file
-input_path <- "../data/"
+input_path <- "../data/" # default: all files, or named file.
 # input_path <- "../data/phrtmma_v1_chr21_40411318_41411317.csv"
-samples_file_path <- "../data/samples.tsv"
+# specific_files <- c("path/to/file1.csv", "path/to/file2.csv")
+# input_path <- system.file("extdata", package = "YourPackageName")
+# samples_file_path <- system.file("extdata", "samples.tsv", package = "YourPackageName")
+
+file_list <- c(
+  "../data/phrtmma_v1_chr21_40411318_41411317.csv",
+  "../data/phrtmma_v1_chr21_41411318_42411317.csv",
+  "../data/phrtmma_v1_chr21_42411318_43411317.csv"
+)
+processed_data_list <- process_genetic_data(NULL, samples_file_path, af_threshold, file_list)
+
+
 af_threshold <- 0.1  # Allele frequency threshold
 gnomad_max <- 1e-6
-metadataclass_file_path <- "../output/suggested_reference_metadata.csv"
+# metadataclass_file_path <- "../output/custom_reference_metadata.csv"
 
-# In your test.R script
+# start analysis ----
 processed_data_list <- process_genetic_data(input_path, samples_file_path, af_threshold)
 
+
+
+# process all files
+input_path <- "../data/"
+samples_file_path <- "../data/samples.tsv"
+processed_data_list <- process_genetic_data(input_path, samples_file_path, af_threshold)
+
+# single file
+input_path <- "../data/phrtmma_v1_chr21_40411318_41411317.csv"
+samples_file_path <- "../data/samples.tsv"
+processed_data_list <- process_genetic_data(input_path, samples_file_path, af_threshold)
+
+# list of files
+input_path <- c(
+  "../data/phrtmma_v1_chr21_40411318_41411317.csv",
+  "../data/phrtmma_v1_chr21_41411318_42411317.csv",
+  "../data/phrtmma_v1_chr21_42411318_43411317.csv"
+)
+samples_file_path <- "../data/samples.tsv"
+processed_data_list <- process_genetic_data(input_path, samples_file_path, af_threshold)
+
+
 # Check that all imported data chucks detected the correct column classes
-compare_column_classes_and_output_csv(processed_data_list, metadataclass_file_path)
+# compare_column_classes_and_output_csv(processed_data_list, metadataclass_file_path)
+compare_column_classes_and_output_csv(processed_data_list)
 
 # Apply the corrected column classes to each dataset in processed_data_list
-processed_data_list <- apply_column_classes_to_processed_data(processed_data_list, metadataclass_file_path)
+# processed_data_list <- apply_column_classes_to_processed_data(processed_data_list, metadataclass_file_path)
+
+processed_data_list <- apply_column_classes_to_processed_data(processed_data_list)
 
 # Merge all dataframes in the list into a single dataframe
 all_data <- bind_rows(processed_data_list)
@@ -54,22 +83,9 @@ all_data <- bind_rows(processed_data_list)
 # processed_data_list[[2]] |> nrow()
 # processed_data_list[[1]] |> ncol()
 # processed_data_list[[2]] |> ncol()
-#
-# processed_data_list[[1]]$BayesDel_addAF_pred |> class()
-# processed_data_list[[2]]$BayesDel_addAF_pred |> class()
-#
-# processed_data_list[[1]]$BayesDel_addAF_pred |> head()
-# processed_data_list[[2]]$BayesDel_addAF_pred |> head()
-#
+
 # df1 <- processed_data_list[[1]]
 # df2 <- processed_data_list[[2]]
-#
-# processed_data_list[[1]]$MutationTaster_score |> class()
-# processed_data_list[[2]]$MutationTaster_score |> class()
-#
-# processed_data_list[[1]]$MutationTaster_score |> head()
-# processed_data_list[[2]]$MutationTaster_score |> head()
-
 
 # Ensure all_data is indeed a dataframe
 if (!is.data.frame(all_data)) {
@@ -90,9 +106,5 @@ plot_criteria_gene_total(all_data, file_suffix)
 plot_variants_per_criteria(all_data, file_suffix)
 
 # Optionally, you can save the aggregated dataframe for further analysis
-write.csv(all_data, paste0("../output/aggregated_data_", Sys.Date(), ".csv"), row.names = FALSE)
-
-
-
-
+# write.csv(all_data, paste0("../output/aggregated_data_", Sys.Date(), ".csv"), row.names = FALSE)
 

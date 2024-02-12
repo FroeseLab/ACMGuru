@@ -18,7 +18,7 @@ plot_criteria_count_each_gene <- function(df, file_suffix) {
     ggplot2::xlab("Gene symbol") +
     ggplot2::ylab("ACMG criteria count (>1)")
 
-  ggplot2::ggsave(paste0("../output/", file_suffix, "_criteria_count_each_gene.pdf"), plot = p)
+  ggplot2::ggsave(paste0(output_path, file_suffix, "_criteria_count_each_gene.pdf"), plot = p)
 }
 
 # Plot Criteria Gene Total
@@ -36,7 +36,7 @@ plot_criteria_gene_total <- function(df, file_suffix) {
     ggplot2::guides(fill = FALSE) +
     scico::scale_fill_scico(palette = 'acton', direction = 1)
 
-  ggplot2::ggsave(paste0("../output/", file_suffix, "_criteria_gene_total.pdf"), plot = p)
+  ggplot2::ggsave(paste0(output_path, file_suffix, "_criteria_gene_total.pdf"), plot = p)
 }
 
 # Plot Variants Per Criteria
@@ -51,7 +51,7 @@ plot_variants_per_criteria <- function(df, file_suffix) {
     ggplot2::guides(fill = FALSE) +
     scico::scale_fill_scico(palette = 'acton', direction = 1)
 
-  ggplot2::ggsave(paste0("../output/", file_suffix, "_variants_per_criteria.pdf"), plot = p, width = 9, height = 5)
+  ggplot2::ggsave(paste0(output_path, file_suffix, "_variants_per_criteria.pdf"), plot = p, width = 9, height = 5)
 }
 
 #' @examples
