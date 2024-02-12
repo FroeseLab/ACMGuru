@@ -26,7 +26,7 @@ plot_criteria_gene_total <- function(df, file_suffix) {
   p <- df %>%
     dplyr::group_by(SYMBOL) %>%
     dplyr::summarise(acmg_count_per_symbol = sum(ACMG_count, na.rm = TRUE)) %>%
-    dplyr::na.omit() %>%
+    na.omit() %>%
     ggplot2::ggplot(ggplot2::aes(x = acmg_count_per_symbol, fill = ..x..)) +
     ggplot2::geom_histogram(stat = "count", binwidth = 1, color = "black") +
     ggplot2::theme_minimal() +

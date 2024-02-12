@@ -1,28 +1,3 @@
-# Load necessary libraries
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(ggplot2)
-library(ggpubr)
-library(grid)
-library(data.table) # fread
-# Specify the path where you want to save the CSV file with the suggestions
-#
-
-devtools::document()
-
-# From the package root directory
-library(devtools)
-load_all() # Automatically points to the current directory as the package root
-library(devtools)
-load_all(".")
-
-processed_data_list <- process_genetic_data(input_path, samples_file_path, af_threshold)
-
-
-# Now you can call your functions for testing
-processed_data_list <- process_genetic_data(input_path, samples_file_path, af_threshold)
-
 
 
 # varsome ----

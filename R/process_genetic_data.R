@@ -24,6 +24,7 @@ process_genetic_data <- function(input_path, samples_file_path, af_threshold) {
     cat("\nProcessing file: ", file_name, "\n")
     df <- imported_data[[file_name]]
 
+
     # Apply ACMG criteria
     df <- set_comp_het_flag(df)
     df <- filter_by_allele_frequency(df, af_threshold)
