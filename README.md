@@ -8,6 +8,28 @@ Richards et al.'s joint consensus recommendation on the standards and guidelines
 
 Accepts VCF format.
 
+## gitignore
+
+Untracked test files in `./output` (automatic user ouput) and in `./data/` due to file sizes:
+
+```
+data/samples.tsv
+data/dataset_v1_chr21_40411318_41411317.csv
+data/dataset_v1_chr21_41411318_42411317.csv
+data/dataset_v1_chr21_42411318_43411317.csv
+data/dataset_v1_chr21_43411318_44411317.csv
+data/dataset_v1_chr21_44411318_45411317.csv
+data/dataset_v1_chr21_45411318_46411317.csv
+data/dataset_v1_chr21_46411318_47411317.csv
+data/dataset_v1_chr21_47411318_48129895.csv
+data/uniprot/README.md
+data/uniprot/humsavar.txt
+data/uniprot/humsvar_corrected.txt
+data/uniprot/humsvar_corrected_withID.txt
+data/uniprot/uniprot-filtered-organism%3A%22Homo+sapiens+%28Human%29+%5B9606%5D%22.gff.zip
+data/uniprot/uniprot-filtered-organism%3A%22Homo+sapiens+%28Human%29+%5B9606%5D%22.tab.zip
+data/uniprot/uniprot_naIDs_convert.tsv
+```
 
 ## Features
 
