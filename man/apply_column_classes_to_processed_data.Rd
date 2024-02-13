@@ -6,13 +6,14 @@
 \usage{
 apply_column_classes_to_processed_data(
   processed_data_list,
-  metadataclass_file_path
+  metadataclass_file_path = NULL
 )
 }
 \arguments{
 \item{processed_data_list}{A list of dataframes to be adjusted.}
 
-\item{metadataclass_file_path}{Path to the CSV file containing reference metadata for column classes.}
+\item{metadataclass_file_path}{Optional. Path to the CSV file containing reference metadata for column classes.
+If not provided, uses the default file included in the package.}
 }
 \description{
 Applies the column classes to each dataframe in a list based on a provided reference metadata CSV file.

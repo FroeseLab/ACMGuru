@@ -24,7 +24,6 @@ process_genetic_data <- function(input_path, samples_file_path, af_threshold) {
     cat("\nProcessing file: ", file_name, "\n")
     df <- imported_data[[file_name]]
 
-
     # Apply ACMG criteria
     df <- set_comp_het_flag(df)
     df <- filter_by_allele_frequency(df, af_threshold)
@@ -34,6 +33,7 @@ process_genetic_data <- function(input_path, samples_file_path, af_threshold) {
     df <- apply_acmg_pm2(df)
     df <- apply_acmg_pm3(df)
     df <- apply_acmg_pp3(df)
+    df <- apply_varsome_in_silico(df)
 
     processed_data_list[[file_name]] <- df
   }

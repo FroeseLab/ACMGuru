@@ -1,0 +1,264 @@
+
+#' Filter Data Based on Allele Frequency
+#'
+#' This function filters variants in the dataset based on a specified allele frequency threshold.
+#'
+#' @param df A dataframe containing genetic data, expected to have an `AF.x` column representing allele frequency.
+#' @param af_threshold A numeric value specifying the maximum allele frequency for included variants.
+#' @return A filtered dataframe with variants below the specified allele frequency threshold.
+#' @import dplyr
+#' @export
+#' @examples
+#' df <- data.frame(
+#'   AF.x = c(0.01, 0.05, 0.2)
+#' )
+#' result <- filter_by_allele_frequency(df, 0.1)
+filter_by_allele_frequency <- function(df, af_threshold) {
+  df_filtered <- df %>%
+    dplyr::filter(AF.x < af_threshold)
+  
+  return(df_filtered)
+}
+
+#' Plotting Summaries for ACMG Criteria
+#'
+#' Contains functions for generating various plots to summarize the counts and distributions of ACMG criteria across genes and variants.
+
+#' @import ggplot2
+#' @import dplyr
+#' @import tidyr
+#' @import scico
+
+# Plot Criteria Count for Each Gene
+plot_criteria_count_each_gene <- function(df, file_suffix) {
+  p <- df %>%
+    dplyr::filter(ACMG_count > 1) %>%
+    ggplot2::ggplot(ggplot2::aes(y = ACMG_count, x = SYMBOL)) +
+    ggplot2::geom_point() +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, vjust = 1)) +
+    ggplot2::xlab("Gene symbol") +
+    ggplot2::ylab("ACMG criteria count (>1)")
+
+  ggplot2::ggsave(paste0(output_path, file_suffix, "_criteria_count_each_gene.pdf"), plot = p)
+}
+
+# Plot Criteria Gene Total
+plot_criteria_gene_total <- function(df, file_suffix) {
+  p <- df %>%
+    dplyr::group_by(SYMBOL) %>%
+    dplyr::summarise(acmg_count_per_symbol = sum(ACMG_count, na.rm = TRUE)) %>%
+    na.omit() %>%
+    ggplot2::ggplot(ggplot2::aes(x = acmg_count_per_symbol, fill = ..x..)) +
+    ggplot2::geom_histogram(stat = "count", binwidth = 1, color = "black") +
+    ggplot2::theme_minimal() +
+    ggplot2::xlab("No. ACMG criteria (P) variants per gene") +
+    ggplot2::ylab("Number of genes") +
+    ggplot2::geom_text(stat = 'count', ggplot2::aes(label = ..count.., y = ..count.. + 20), color = "black") +
+    ggplot2::guides(fill = FALSE) +
+    scico::scale_fill_scico(palette = 'acton', direction = 1)
+
+  ggplot2::ggsave(paste0(output_path, file_suffix, "_criteria_gene_total.pdf"), plot = p)
+}
+
+# Plot Variants Per Criteria
+plot_variants_per_criteria <- function(df, file_suffix) {
+  p <- df %>%
+    ggplot2::ggplot(ggplot2::aes(x = ACMG_count, fill = ..x..)) +
+    ggplot2::geom_histogram(binwidth = 1, color = "black") +
+    ggplot2::xlab("No. ACMG criteria\nassigned (P)") +
+    ggplot2::ylab("No. variants") +
+    ggplot2::theme_minimal() +
+    ggplot2::geom_text(stat = 'count', ggplot2::aes(label = ..count.., y = ..count.. + 300), color = "black") +
+    ggplot2::guides(fill = FALSE) +
+    scico::scale_fill_scico(palette = 'acton', direction = 1)
+
+  ggplot2::ggsave(paste0(output_path, file_suffix, "_variants_per_criteria.pdf"), plot = p, width = 9, height = 5)
+}
+
+#' @examples
+#' file_suffix <- "example_suffix"
+#'
+#' # Assuming df is your dataframe prepared with ACMG labels
+#' # df <- prepare_acmg_labels(df)
+#'
+#' # plot_criteria_count_each_gene(df, file_suffix)
+#' # plot_criteria_gene_total(df, file_suffix)
+#' # plot_variants_per_criteria(df, file_suffix)
+
+#' Prepare ACMG Labels
+#'
+#' Prepares ACMG labels by ensuring all expected ACMG label columns exist in the dataframe, assigning NA where they do not, identifying the highest priority ACMG classification for each row, and counting the number of non-NA ACMG labels for each row.
+#'
+#' @param df A dataframe containing genetic data potentially including various ACMG label columns.
+#' @return A modified dataframe with additional columns for the highest priority ACMG classification (`ACMG_highest`) and the count of non-NA ACMG labels (`ACMG_count`) for each row.
+#' @export
+#' @import dplyr
+#' @import tidyr
+#' @examples
+#' df <- data.frame(
+#'   ACMG_PVS1 = c(NA, "PVS1"),
+#'   ACMG_PS1 = c("PS1", NA)
+#' )
+#' df_prepared <- prepare_acmg_labels(df)
+prepare_acmg_labels <- function(df) {
+  acmg_labels <- c("ACMG_PVS1", "ACMG_PS1", "ACMG_PS2", "ACMG_PS3", "ACMG_PS4", "ACMG_PS5",
+                   "ACMG_PM1", "ACMG_PM2", "ACMG_PM3", "ACMG_PM4", "ACMG_PM5", "ACMG_PM6",
+                   "ACMG_PM7", "ACMG_PP1", "ACMG_PP2", "ACMG_PP3", "ACMG_PP4")
+
+  # Ensure all ACMG columns exist in the dataframe, add them as NA if they do not
+  for (acmg_label in acmg_labels) {
+    if (!acmg_label %in% names(df)) {
+      df[[acmg_label]] <- NA
+    }
+  }
+
+  # Use dplyr::coalesce to find the first non-NA ACMG label for each row
+  df$ACMG_highest <- dplyr::coalesce(!!!dplyr::select(df, dplyr::all_of(acmg_labels)))
+
+  # Count the number of non-NA ACMG labels for each row
+  df$ACMG_count <- rowSums(!is.na(dplyr::select(df, dplyr::all_of(acmg_labels))), na.rm = TRUE)
+
+  return(df)
+}
+
+#' Process Genetic Data According to ACMG Guidelines
+#'
+#' This function processes genetic data by applying a series of ACMG criteria to identify variants based on specified thresholds and conditions.
+#'
+#' @param input_path Path to the input files or directory containing the CSV files.
+#' @param samples_file_path Path to the samples file containing phenotype information.
+#' @param af_threshold Allele frequency threshold for filtering variants.
+#'
+#' @return A list of data frames, each representing processed genetic data for a file.
+#' @export
+#' @importFrom dplyr filter
+#' @importFrom tidyr separate
+#' @importFrom stringr str_replace
+#' @examples
+#' input_path <- system.file("extdata", package = "YourPackageName")
+#' samples_file_path <- system.file("extdata", "samples.tsv", package = "YourPackageName")
+#' af_threshold <- 0.01
+#' processed_data_list <- process_genetic_data(input_path, samples_file_path, af_threshold)
+process_genetic_data <- function(input_path, samples_file_path, af_threshold) {
+  imported_data <- read_data_file(input_path, samples_file_path)
+  processed_data_list <- list()
+
+  for (file_name in names(imported_data)) {
+    cat("\nProcessing file: ", file_name, "\n")
+    df <- imported_data[[file_name]]
+
+
+    # Apply ACMG criteria
+    df <- set_comp_het_flag(df)
+    df <- filter_by_allele_frequency(df, af_threshold)
+    df <- apply_acmg_pvs1(df)
+    df <- apply_acmg_ps1(df)
+    df <- apply_acmg_ps5(df)
+    df <- apply_acmg_pm2(df)
+    df <- apply_acmg_pm3(df)
+    df <- apply_acmg_pp3(df)
+
+    processed_data_list[[file_name]] <- df
+  }
+
+  return(processed_data_list)
+}
+
+#' Read Data Files and Merge with Sample Phenotype Information
+#'
+#' This function reads data files from a specified path and merges them with sample phenotype information. It can handle a single file, all files within a directory, or a specific list of files.
+#'
+#' @param input_path Optional. Path to the input directory containing the files or a single file path. Used only if file_list is NULL.
+#' @param samples_file_path Path to the samples file containing phenotype information.
+#' @param file_list Optional. A vector of specific file paths to be processed. Overrides input_path if provided.
+#' @return A list of data frames, each representing a merged data file.
+#' @importFrom data.table fread
+#' @export
+#' @examples
+# Process all files in a directory:
+# input_path <- system.file("extdata", package = "YourPackageName")
+# samples_file_path <- system.file("extdata", "samples.tsv", package = "YourPackageName")
+# processed_data_list <- read_data_file(input_path, samples_file_path)
+
+# To process a single file:
+# single_file <- system.file("extdata", "single_file.csv", package = "YourPackageName")
+# samples_file_path <- system.file("extdata", "samples.tsv", package = "YourPackageName")
+# processed_data_list <- read_data_file(single_file, samples_file_path)
+
+# To process a specific list of files:
+# specific_files <- c(
+#   system.file("extdata", "file1.csv", package = "YourPackageName"),
+#   system.file("extdata", "file2.csv", package = "YourPackageName")
+# )
+# samples_file_path <- system.file("extdata", "samples.tsv", package = "YourPackageName")
+# processed_data_list <- read_data_file(NULL, samples_file_path, specific_files)
+
+read_data_file <- function(input_path = NULL, samples_file_path, file_list = NULL) {
+  files <- character()
+
+  # Check if a specific list of files is provided
+  if (!is.null(file_list) && length(file_list) > 0) {
+    files <- file_list
+  } else if (!is.null(input_path)) {
+    if (length(input_path) == 1) {
+      # Single input_path provided
+      if (dir.exists(input_path)) {
+        # It's a directory
+        files <- list.files(input_path, pattern = "\\.csv$", full.names = TRUE)
+      } else if (file.exists(input_path) && grepl("\\.csv$", input_path)) {
+        # It's a single file
+        files <- input_path
+      } else {
+        stop("Input path is neither a valid file nor a directory.")
+      }
+    } else if (length(input_path) > 1) {
+      # input_path is treated as a list of files
+      files <- input_path
+    } else {
+      stop("Please provide either a valid directory path, a single file path, or a list of file paths.")
+    }
+  } else {
+    stop("input_path or file_list must be provided.")
+  }
+
+  cat("Reading samples information from: ", samples_file_path, "\n")
+  samples_df <- fread(samples_file_path, sep = "\t", col.names = c("sample", "cohort_pheno"), header = FALSE, data.table = FALSE)
+
+  data_list <- list()
+  for (file_path in files) {
+    cat("Reading file: ", file_path, "\n")
+    df <- fread(file_path, sep = ",", data.table = FALSE)
+    df <- merge(df, samples_df, by = "sample", all.x = TRUE)
+    data_list[[basename(file_path)]] <- df
+  }
+
+  return(data_list)
+}
+#' Set Compound Heterozygous Flags
+#'
+#' This function sets flags for compound heterozygous variants within the dataset.
+#' WARNING: This function does not check phase.
+#'
+#' @param df A dataframe containing genetic data with columns `sample`, `SYMBOL`, and `genotype`.
+#' @return A modified dataframe with a new `comp_het_flag` column.
+#' @import dplyr
+#' @export
+#' @examples
+#' df <- data.frame(
+#'   sample = c("Sample1", "Sample1"),
+#'   SYMBOL = c("Gene1", "Gene1"),
+#'   genotype = c(1, 2)
+#' )
+#' result <- set_comp_het_flag(df)
+set_comp_het_flag <- function(df) {
+  cat("Setting compound heterozygous flag...\n")
+  df <- df %>%
+    dplyr::group_by(sample, SYMBOL) %>%
+    dplyr::mutate(comp_het_flag = ifelse(n() > 1, 1, NA)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(comp_het_flag = ifelse(is.na(comp_het_flag) & genotype == 2, 1, comp_het_flag))
+  
+  return(df)
+}
+

@@ -4,21 +4,18 @@
 \alias{read_data_file}
 \title{Read Data Files and Merge with Sample Phenotype Information}
 \usage{
-read_data_file(input_path, samples_file_path)
+read_data_file(input_path = NULL, samples_file_path, file_list = NULL)
 }
 \arguments{
-\item{input_path}{Path to the input files or directory containing the files.}
+\item{input_path}{Optional. Path to the input directory containing the files or a single file path. Used only if file_list is NULL.}
 
 \item{samples_file_path}{Path to the samples file containing phenotype information.}
+
+\item{file_list}{Optional. A vector of specific file paths to be processed. Overrides input_path if provided.}
 }
 \value{
 A list of data frames, each representing a merged data file.
 }
 \description{
-This function reads data files from a specified path and merges them with sample phenotype information.
-}
-\examples{
-input_path <- system.file("extdata", package = "YourPackageName")
-samples_file_path <- system.file("extdata", "samples.tsv", package = "YourPackageName")
-read_data_file(input_path, samples_file_path)
+This function reads data files from a specified path and merges them with sample phenotype information. It can handle a single file, all files within a directory, or a specific list of files.
 }
