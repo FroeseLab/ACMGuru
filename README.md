@@ -2,6 +2,8 @@
 
 # ACMGuru
 
+[Manual: ACMGuru_0.0.0.9000.pdf](https://github.com/DylanLawless/ACMGuru/blob/main/inst/doc/ACMGuru_0.0.0.9000.pdf)
+
 ACMGuru is an R package designed to facilitate the interpretation of genetic determinants of disease in genomic data. It applies extensive annotation and filtering based on the ACMG (American College of Medical Genetics and Genomics) and AMP (Association for Molecular Pathology) guideline standards. 
 
 Richards et al.'s joint consensus recommendation on the standards and guidelines for the interpretation of sequence variants is a foundational document in this field (2015, [doi: 10.1038/gim.2015.30](https://doi.org/10.1038/gim.2015.30)). ACMGuru is designed to implement the initial steps of our filtering protocol for the addition of ACMG-standardised labels to candidate causal variants, according to these standards.
