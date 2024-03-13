@@ -72,10 +72,10 @@ ACMGuru::plot_result(result)
 
 For more detailed information on using ACMGuru, see the package vignette or the reference manual.
 
-
 ## Rule columns
 
 ### Minimal recommended features:
+```
 sample.id,
 SYMBOL,
 HGVSp,
@@ -105,8 +105,10 @@ Protein_position,
 Amino_acids,
 Codons,
 CANONICAL,
+```
 
 ### Secondary recommended features:
+```
 ACMG_count,
 ACMG_highest,
 ACMG_total_score,
@@ -127,8 +129,10 @@ SWISSPROT,
 TREMBL,
 HGVS_OFFSET,
 CADD_PHRED
+```
 
 ### QC recommended features:
+```
 BaseQRankSum,
 DB,
 DP,
@@ -146,8 +150,10 @@ RAW_MQ,
 ReadPosRankSum,
 SOR,
 OLD_MULTIALLELIC,
+```
 
 ### Where these are used
+```
 #### Apply ACMG PM2 Criterion
 gnomAD_AF
 gnomad_max
@@ -218,6 +224,7 @@ Polyphen2-HVAR, Polyphen2_HVAR_score
 PROVEAN, PROVEAN_score
 REVEL, REVEL_score
 SIFT, SIFT_score
+```
 
 ## Contributing
 
