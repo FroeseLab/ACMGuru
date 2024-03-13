@@ -74,6 +74,14 @@ For more detailed information on using ACMGuru, see the package vignette or the 
 
 ## Rule columns
 
+Where available, AMGuru will use annotation features to apply rules. 
+The minimal recommended features are typically useful regardless of ACMGuru.
+
+The features listed here are applied using the VEP plugins and their associated databases
+(<https://www.ensembl.org/info/docs/tools/vep/script/vep_plugins.html>)
+and/or the dbNSFP plugin and database (SNVs only) 
+(<http://database.liulab.science/dbNSFP>).
+
 ### Minimal recommended features:
 ```
 sample.id,
